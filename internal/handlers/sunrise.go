@@ -1,31 +1,31 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"sunflow/internal/models"
+	"os"
+	"path/filepath"
 )
 
 func Handlers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Sunlight Map")
-}
-
-func SunlightHandler(w http.ResponseWriter, r *http.Request) {
-	latitude := r.URL.Query().Get("latitude")
-	longitude := r.URL.Query().Get("longitude")
-
-	if latitude == "" || longitude == "" {
-		http.Error(w, "Should latitude and longitude not null", http.StatusBadRequest)
-		return
-	}
-
-	sunlightData, err := models.GetSunLightData(latitude, longitude)
+	// Получаем рабочий каталог
+	wd, err := os.Getwd()
 	if err != nil {
-		http.Error(w, "Unable to fetch sunlight data", http.StatusInternalServerError)
+		log.Fatalf("Unable to get working directory: %v", err)
+	}
+	fmt.Println("Current working directory:", wd)
+
+	// Путь к index.html
+	indexPath := filepath.Join("A:", "Others", "SunFlow", "web", "static", "index.html")
+
+	// Проверка, существует ли файл
+	if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+		fmt.Println("File does not exist:", indexPath)
+		http.Error(w, "Unable to load index.html", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sunlightData)
 
+	// Чтение и отдача файла index.html
+	http.ServeFile(w, r, indexPath)
 }
