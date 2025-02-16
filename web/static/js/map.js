@@ -1,36 +1,28 @@
-const map = L.map('map').setView([0, 0], 2); // Изначальный центр карты (0,0) и масштаб 2
-
-// Добавление карты OpenStreetMap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
-// Функция для получения данных о солнечном свете
-function getSunlightData(lat, lng) {
-    $.get(`/sunlight?lat=${lat}&lng=${lng}`, function(data) {
-        console.log(data);
-        // Отображаем данные на карте
-        const sunrise = new Date(data.sunrise);
-        const sunset = new Date(data.sunset);
-
-        const popupContent = `
-            <strong>Sunlight Info:</strong><br>
-            Sunrise: ${sunrise.toLocaleTimeString()}<br>
-            Sunset: ${sunset.toLocaleTimeString()}<br>
-            Day Length: ${data.day_length}
-        `;
-
-        L.marker([lat, lng]).addTo(map)
-            .bindPopup(popupContent)
-            .openPopup();
-    }).fail(function() {
-        alert("Failed to retrieve sunlight data.");
+// Функция для обновления карты на основе солнечного света
+function showSunlight() {
+    $.getJSON("/sunlight", function(data) {
+      // Преобразуем время восхода и заката в объекты Date
+      var sunrise = new Date('1970-01-01T' + data.sunrise + 'Z');
+      var sunset = new Date('1970-01-01T' + data.sunset + 'Z');
+      
+      // Получаем текущее время
+      var now = new Date();
+  
+      // Логика для расчета светлой и темной зоны
+      var isDaytime = now > sunrise && now < sunset;
+      
+      // Если день, отображаем светлую часть, если ночь - темную
+      if (isDaytime) {
+        L.polygon([
+          [90, -180], [90, 0], [0, 0], [0, -180]
+        ], { color: 'yellow' }).addTo(map); // Светлая зона
+      } else {
+        L.polygon([
+          [90, 0], [90, 180], [0, 180], [0, 0]
+        ], { color: 'gray' }).addTo(map); // Темная зона
+      }
     });
-}
-
-// Обработчик клика на карту
-map.on('click', function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-    getSunlightData(lat, lng); // Запросим данные о солнечном свете по координатам
-});
+  }
+  
+  showSunlight(); // Показываем солнечное освещение
+  

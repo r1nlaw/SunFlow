@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 )
 
+// Структура для получения данных из API
 type SunriseSunsetAPIResponse struct {
 	Results struct {
 		Sunrise string `json:"sunrise"`
@@ -15,45 +15,28 @@ type SunriseSunsetAPIResponse struct {
 	Status string `json:"status"`
 }
 
-func GetSunriseSunsetInfo(latitude, longitude float64) (*SunriseSunsetAPIResponse, error) {
+// Функция для получения данных о солнечном свете для заданных координат
+func GetSunlightData(latitude, longitude float64) (*SunriseSunsetAPIResponse, error) {
+	// Формируем URL для запроса к API
 	apiURL := fmt.Sprintf("https://api.sunrise-sunset.org/json?lat=%f&lng=%f&formatted=0", latitude, longitude)
 
+	// Выполняем HTTP-запрос
 	resp, err := http.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching sunrise/sunset data: %v", err)
 	}
 	defer resp.Body.Close()
 
+	// Декодируем JSON-ответ
 	var result SunriseSunsetAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding sunrise/sunset data: %v", err)
 	}
 
+	// Возвращаем данные о времени восхода и заката
 	if result.Status != "OK" {
-		return nil, fmt.Errorf("error in API response: %s", resp.Status)
+		return nil, fmt.Errorf("error in API response: %s", result.Status)
 	}
 
 	return &result, nil
-}
-
-func CalculateTimeToSunrise(latitude, longitude float64) (string, error) {
-	data, err := GetSunriseSunsetInfo(latitude, longitude)
-	if err != nil {
-		return "", err
-	}
-
-	sunrise, err := time.Parse(time.RFC3339, data.Results.Sunrise)
-	if err != nil {
-		return "", fmt.Errorf("error parsing sunrise time: %v", err)
-	}
-
-	now := time.Now()
-
-	duration := sunrise.Sub(now)
-
-	if duration < 0 {
-		return "", fmt.Errorf("sunrise has already passed")
-	}
-
-	return fmt.Sprintf("Time to sunrise: %v", duration), nil
 }

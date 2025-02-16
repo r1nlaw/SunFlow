@@ -15,6 +15,41 @@
 
   <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="/static/js/map.js"></script>
+  <script>
+    var map = L.map('map').setView([51.505, -0.09], 2); // Начальная точка карты
+
+    // Добавляем карту OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Функция для определения темных и светлых зон
+    function showSunlight() {
+      $.getJSON("/sunlight", function(data) {
+        // Преобразуем время восхода и заката в объекты Date
+        var sunrise = new Date(data.sunrise);
+        var sunset = new Date(data.sunset);
+        
+        // Получаем текущее время
+        var now = new Date();
+
+        // Логика для расчета светлой и темной зоны (простая версия)
+        var isDaytime = now > sunrise && now < sunset;
+        
+        // Если день, отображаем светлую часть, если ночь - темную
+        if (isDaytime) {
+          L.polygon([
+            [90, -180], [90, 0], [0, 0], [0, -180]
+          ], { color: 'yellow' }).addTo(map); // Светлая зона
+        } else {
+          L.polygon([
+            [90, 0], [90, 180], [0, 180], [0, 0]
+          ], { color: 'gray' }).addTo(map); // Темная зона
+        }
+      });
+    }
+
+    showSunlight(); // Показываем солнечное освещение
+  </script>
 </body>
 </html>
